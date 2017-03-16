@@ -39,7 +39,6 @@ in
         example = ''
           "tests" = {
             lastOctave = "12";
-            hostName = "tests.local";
             bindMounts = {
                 "/var/www/tests.local" = {
                   hostPath = "/home/krofek/projects/tests";

@@ -31,8 +31,7 @@ bindMountOpts = { name, config, ... }: {
 
 };
 
-  webserverOpts = { name, config, ... }: {
-    options = {
+  webserverOpts = config: {
       # recommended settings
       recommendedSettings = mkOption {
         type = types.bool;
@@ -43,20 +42,30 @@ bindMountOpts = { name, config, ... }: {
       # use the containers.configs' user.
       phpPool = mkOption {
         type = types.lines;
-        default = '''';
+        default = ''
+          listen = 127.0.0.1:9000
+          listen.owner = ${config.user}
+          listen.group = ${config.user}
+          user = ${config.user}
+          pm = dynamic
+          pm.max_children = 75
+          pm.start_servers = 10
+          pm.min_spare_servers = 5
+          pm.max_spare_servers = 20
+          pm.max_requests = 500
+        '';
       };
 
       # vhosts options
       vhosts = mkOption {
-        type = type.attrsOf (types.submodule (
+        type = types.attrsOf (types.submodule (
           import ../nixpkgs/nixos/modules/services/web-servers/nginx/vhost-options.nix {
             inherit lib;
           }));
-        default = {};
+        default = import ./conf/nginx.default.nix pkgs config.hostName;
       };
 
     };
-  };
 
 in
 {
@@ -94,7 +103,7 @@ in
 
       hostName = mkOption {
         type = types.str;
-        default = "container.local";
+        default = "${config.name}.local";
       };
 
       bindMounts = mkOption {
@@ -127,25 +136,8 @@ in
       };
 
       # match the appropriate config options. For now the phpFpm ones are hardcoded
-      server = mkOption {
-        type = types.attrsOf (types.submodule webserverOpts);
-        default = {
-          vhosts = import ./conf/nginx.default.nix pkgs config.hostName;
-          recommendedSettings = true;
-          phpPool = ''
-            listen = 127.0.0.1:9000
-            listen.owner = ${config.user}
-            listen.group = ${config.user}
-            user = ${config.user}
-            pm = dynamic
-            pm.max_children = 75
-            pm.start_servers = 10
-            pm.min_spare_servers = 5
-            pm.max_spare_servers = 20
-            pm.max_requests = 500
-          '';
-        };
-      };
+
+      server = webserverOpts config;
     };
 
     config = {

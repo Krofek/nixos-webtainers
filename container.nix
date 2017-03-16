@@ -68,10 +68,9 @@ let
 
     mysql = mkMySql container;
 
-    # todo: FIX THESE TWO: is not a submodule error
-    /*phpfpm = mkPhpFpm container;
+    phpfpm = mkPhpFpm container;
 
-    nginx = mkNginx container;*/
+    nginx = mkNginx container;
   };
 
   mkUser = container: import ./conf/webserver.user.nix container.user;
