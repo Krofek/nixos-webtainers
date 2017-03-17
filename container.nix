@@ -46,9 +46,12 @@ let
     '';
   };
 
+  mkWebserver = "";
+
+  # todo: move these two into nginx
   mkPhpFpm = container: {
     phpPackage = pkgs.php;
-    phpOptions = import ./conf/php.ini.nix pkgs;
+    phpOptions = import ./php/php.ini.nix pkgs;
     poolConfigs.nginx = container.server.phpPool;
   };
 
@@ -68,12 +71,13 @@ let
 
     mysql = mkMySql container;
 
+    # todo: takes part in the nginx config
     phpfpm = mkPhpFpm container;
 
     nginx = mkNginx container;
   };
 
-  mkUser = container: import ./conf/webserver.user.nix container.user;
+  mkUser = container: import ./user.nix container.user;
 
   mkContainer = name: container:
     nameValuePair (name) ({

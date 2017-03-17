@@ -2,70 +2,42 @@
 with lib;
 
 let
-# copied from containers.nix
-bindMountOpts = { name, config, ... }: {
+  # copied from containers.nix
+  bindMountOpts = { name, config, ... }: {
 
-  options = {
-    mountPoint = mkOption {
-      example = "/mnt/usb";
-      type = types.str;
-      description = "Mount point on the container file system.";
-    };
-    hostPath = mkOption {
-      default = null;
-      example = "/home/alice";
-      type = types.nullOr types.str;
-      description = "Location of the host path to be mounted.";
-    };
-    isReadOnly = mkOption {
-      default = true;
-      example = true;
-      type = types.bool;
-      description = "Determine whether the mounted path will be accessed in read-only mode.";
-    };
-  };
-
-  config = {
-    mountPoint = mkDefault name;
-  };
-
-};
-
-  webserverOpts = config: {
-      # recommended settings
-      recommendedSettings = mkOption {
-        type = types.bool;
+    options = {
+      mountPoint = mkOption {
+        example = "/mnt/usb";
+        type = types.str;
+        description = "Mount point on the container file system.";
+      };
+      hostPath = mkOption {
+        default = null;
+        example = "/home/alice";
+        type = types.nullOr types.str;
+        description = "Location of the host path to be mounted.";
+      };
+      isReadOnly = mkOption {
         default = true;
+        example = true;
+        type = types.bool;
+        description = "Determine whether the mounted path will be accessed in read-only mode.";
       };
-
-      # cfg.user will not work. Will need mapping each attribute set to list and
-      # use the containers.configs' user.
-      phpPool = mkOption {
-        type = types.lines;
-        default = ''
-          listen = 127.0.0.1:9000
-          listen.owner = ${config.user}
-          listen.group = ${config.user}
-          user = ${config.user}
-          pm = dynamic
-          pm.max_children = 75
-          pm.start_servers = 10
-          pm.min_spare_servers = 5
-          pm.max_spare_servers = 20
-          pm.max_requests = 500
-        '';
-      };
-
-      # vhosts options
-      vhosts = mkOption {
-        type = types.attrsOf (types.submodule (
-          import ../nixpkgs/nixos/modules/services/web-servers/nginx/vhost-options.nix {
-            inherit lib;
-          }));
-        default = import ./conf/nginx.default.nix pkgs config.hostName;
-      };
-
     };
+
+    config = {
+      mountPoint = mkDefault name;
+    };
+
+  };
+
+  webserverOpts = config: if (config.type == "php-fpm")
+    then import ./php-fpm-options.nix {
+        inherit lib;
+        inherit config;
+        inherit pkgs;
+      } config
+    else throw "Only php-fpm type is available atm.";
 
 in
 {
@@ -136,7 +108,6 @@ in
       };
 
       # match the appropriate config options. For now the phpFpm ones are hardcoded
-
       server = webserverOpts config;
     };
 
